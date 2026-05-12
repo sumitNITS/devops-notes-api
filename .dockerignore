@@ -3,79 +3,97 @@
 .gitignore
 .gitattributes
 
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-pip-log.txt
-pip-delete-this-directory.txt
-.pytest_cache
-.tox
+# Python — anywhere in the project
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/pip-log.txt
+**/pip-delete-this-directory.txt
+**/.pytest_cache
+**/.tox
 venv/
 env/
 ENV/
 .venv
 
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-.DS_Store
-*.sublime-project
-*.sublime-workspace
+# IDE — anywhere
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+**/*~
+**/.DS_Store
+**/*.sublime-project
+**/*.sublime-workspace
+**/.fleet
+**/.nova
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# Environment & Secrets — CRITICAL: must match at any depth
+**/.env
+**/.env.local
+**/.env.*.local
+**/.env.development
+**/.env.production
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.crt
+**/secrets/
+**/credentials.json
+**/service-account*.json
 
 # Terraform
 terraform/
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-*.hcl
-.terraform.lock.hcl
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+terraform/**/*.hcl
+**/.terraform.lock.hcl
 
-# Documentation & Config
-README.md
-.gitignore
-.dockerignore
-LICENSE
+# Documentation & Config (root only)
+/README.md
+/LICENSE
+/cloudbuild.yaml
 
-# Cloud Build
-cloudbuild.yaml
+# Node/npm — frontend specifically
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/.turbo/
+frontend/coverage/
+frontend/.nyc_output/
+frontend/*.tsbuildinfo
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
 
-# Node/npm (if any)
-node_modules/
-npm-debug.log
+# Tests — anywhere
+**/tests/
+**/.coverage
+**/htmlcov/
 
-# Tests
-tests/
-.pytest_cache
-.coverage
-htmlcov/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
+# Build artifacts — anywhere
+**/build/
+**/dist/
+**/*.egg-info/
 
 # CI/CD
 .github/
 .gitlab-ci.yml
 
-# Logs
-*.log
-logs/
+# Logs — anywhere
+**/*.log
+**/logs/
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
-Thumbs.db
+# Temporary files — anywhere
+**/*.tmp
+**/*.temp
+**/*.bak
+**/Thumbs.db

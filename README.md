@@ -1,48 +1,90 @@
 # DevOps Notes API
 
-A lightweight, serverless REST API built with **FastAPI** and deployed on **Google Cloud Run** using **Cloud Build** (and **Terraform**).
+A lightweight, serverless full-stack application for DevOps engineers to store, search, and manage personal notes, tips, and learnings. Built with **FastAPI** + **React** + **Firestore** and deployed on **Google Cloud Run**.
 
-Perfect for DevOps engineers to store and search personal notes, tips, and learnings.
+## DevOps Notes UI Preview
+
+![DevOps Notes UI Preview](./.github/images/devops_notes_api.png)
 
 ## Features
 
-- Create, list, search, and delete DevOps notes
+- Create, read, update, search, and delete DevOps notes
+- Markdown support with code syntax highlighting
+- Tag-based filtering and full-text search
 - Firestore as backend database
-- Fully containerized with Docker
+- Fully containerized with Docker (backend + frontend)
 - Infrastructure as Code with Terraform
 - Automated CI/CD with Cloud Build
 - Serverless & auto-scaling on Cloud Run
 
 ## Tech Stack
 
-- **Backend**: Python + FastAPI
-- **Database**: Google Cloud Firestore
-- **Deployment**: Google Cloud Run
-- **IaC**: Terraform
-- **CI/CD**: Google Cloud Build
-- **Container**: Docker
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion |
+| **Backend** | Python 3.11, FastAPI, Pydantic |
+| **Database** | Google Cloud Firestore (Native mode) |
+| **Container** | Docker, Docker Compose |
+| **Deployment** | Google Cloud Run |
+| **IaC** | Terraform |
+| **CI/CD** | Google Cloud Build |
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│     User        │────▶│  Cloud Run      │────▶│   Firestore     │
+│   (Browser)     │◄────│  (Frontend)     │     │   Database      │
+└─────────────────┘     └────────┬────────┘     └─────────────────┘
+                                 │
+                                 │ HTTPS / JSON
+                                 ▼
+                        ┌─────────────────┐
+                        │  Cloud Run      │
+                        │  (Backend API)  │
+                        └─────────────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │  Artifact       │
+                        │  Registry       │
+                        └─────────────────┘
+                                 ▲
+                                 │ Build & Push
+                                 │
+                        ┌─────────────────┐
+                        │  Cloud Build    │◄──── Git Push (main)
+                        │  (CI/CD)        │
+                        └─────────────────┘
+```
+
+**Request Flow:**
+1. User opens the React frontend served from Cloud Run
+2. Frontend makes API calls to the FastAPI backend (also on Cloud Run)
+3. Backend reads/writes notes to Firestore
+4. Git push to `main` triggers Cloud Build → builds both images → deploys
 
 ## Prerequisites
 
 1. Google Cloud Account + Project
 2. `gcloud` CLI installed and authenticated
-3. Terraform installed
+3. Terraform installed (for IaC)
+4. Docker + Docker Compose installed (for local container development)
 
 ## Quick Start
 
-### 1. Clone & Setup
+### Option 1: Local Development
 
 ```bash
-git clone <your-repo-url>
+# Clone the repository
+git clone https://github.com/sumitNITS/devops-notes-api.git
 cd devops-notes-api
 
-# Authenticate with GCP
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
+# Make sure you have GCP credentials for Firestore access
+gcloud auth application-default login
 ```
 
-### 2. Local Development
-
+**Backend:**
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
@@ -58,19 +100,41 @@ gcloud services enable firestore.googleapis.com
 gcloud auth application-default login
 
 # Create Firestore database (if not already created)
-gcloud firestore databases create --database="devops-notes-db" --location=<location>
+gcloud firestore databases create --database="devops-notes-db" --location=asia-south1
 
 # Run the application
 cd app
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8000
 ```
 
-**Test the API:**
-- Health check: http://127.0.0.1:8000/
-- List notes: http://127.0.0.1:8000/notes
-
-**Create a note:**
+**Frontend:**
 ```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env
+
+# Start Vite dev server (runs on port 5173)
+npm run dev
+```
+
+Open:
+- **Frontend UI:** http://localhost:5173
+- **Backend API:** http://localhost:8000
+- **API Docs (Swagger):** http://localhost:8000/docs
+
+**Test the API:**
+```bash
+# Health check
+curl http://127.0.0.1:8000/health
+
+# List notes
+curl http://127.0.0.1:8000/notes
+
+# Create a note
 curl -X POST http://127.0.0.1:8000/notes \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,78 +144,71 @@ curl -X POST http://127.0.0.1:8000/notes \
   }'
 ```
 
-### 3. Deploy to Cloud Run
+---
 
-**Option A: Automatic (Recommended)**
-Push code to `main` branch → Cloud Build automatically builds and deploys
+### Option 2: Deploy to Cloud Run
 
-**Option B: Manual Deployment**
-```bash
-gcloud run deploy devops-notes \
-  --source . \
-  --region <region> \
-  --allow-unauthenticated \
-  --set-env-vars FIRESTORE_DB_NAME=devops-notes-db
-```
+**Automatic (Recommended):**
+Push code to `main` branch → Cloud Build automatically builds and deploys both services.
+
+## Understanding the Ports
+
+| Context | What Runs | Port | How to Access |
+|---------|-----------|------|---------------|
+| `npm run dev` (local) | Vite dev server | 5173 | http://localhost:5173 |
+| Docker (frontend) | Nginx | **8080** inside container | http://localhost:**5173** (mapped) |
+| Docker (backend) | Uvicorn | **8080** inside container | http://localhost:**8000** (mapped) |
+| Cloud Run | Nginx / Uvicorn | 8080 | Via Cloud Run URL |
+
+> **Key point:** Inside Docker, both frontend and backend listen on **8080** (Cloud Run requirement). We map them to different **host ports** (`5173` and `8000`) to avoid conflicts.
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | / | Health check |
-| POST | /notes | Create note |
-| GET | /notes | List all notes |
-| GET | /notes/search?q=eks | Search notes |
-| DELETE | /notes/{id} | Delete note |
-
-## Example Requests
-
-**Create Note:**
-```bash
-curl -X POST <CLOUD_RUN_URL>/notes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Reduce EKS Costs",
-    "content": "Use Spot instances + Karpenter...",
-    "tags": ["aws", "kubernetes", "cost-optimization"]
-  }'
-```
-
-**Search Notes:**
-```bash
-curl "<CLOUD_RUN_URL>/notes/search?q=kubernetes"
-```
-
-**Delete Note:**
-```bash
-curl -X DELETE "<CLOUD_RUN_URL>/notes/{note_id}"
-```
+| GET | `/health` | Health check |
+| POST | `/notes` | Create note |
+| GET | `/notes` | List notes (paginated) |
+| GET | `/notes/{id}` | Get single note |
+| PUT | `/notes/{id}` | Update note |
+| DELETE | `/notes/{id}` | Delete note |
+| GET | `/notes/search?q=eks` | Search notes |
+| GET | `/notes/tag/{tag}` | Filter notes by tag |
 
 ## Environment Variables
+
+### Backend
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `FIRESTORE_DB_NAME` | Firestore database name | `devops-notes-db` |
-| `ENVIRONMENT` | Deployment environment | `dev` |
 | `PORT` | Application port | `8080` |
 
-## Deployment Architecture
+### Frontend
 
-```
-Git Repository (main branch)
-         ↓
-    Cloud Build (triggered)
-         ↓
-    Build Docker Image
-         ↓
-    Push to Artifact Registry
-         ↓
-    Deploy to Cloud Run
-         ↓
-   Firestore Database
-```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API base URL | `http://127.0.0.1:8000` |
 
 ## Troubleshooting
+
+### Frontend shows blank page or 404 in Docker
+Make sure the API URL was set correctly at build time:
+```bash
+docker build -f Dockerfile.frontend \
+  --build-arg VITE_API_URL=http://localhost:8000 \
+  -t devops-notes-frontend .
+```
+
+### Port 5173 is already in use
+Change the host port mapping:
+```bash
+docker run -p 3000:8080 devops-notes-frontend
+# Now access http://localhost:3000
+```
+
+### Docker: Frontend can't reach backend
+When both run in Docker, `localhost` inside the frontend container refers to the container itself, not your machine. Use Docker Compose which handles networking automatically.
 
 ### Permission Denied for Firestore
 ```bash
