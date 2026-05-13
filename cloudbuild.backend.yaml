@@ -57,7 +57,7 @@ timeout: '1800s'  # 30 minutes
 
 substitutions:
   _REGION: 'asia-south1'
-  _SERVICE_NAME: 'devops-notes'
+  _SERVICE_NAME: 'devops-notes-backend'
   _ARTIFACT_REGISTRY_REPO: 'devops-notes-repo'
   _CONTAINER_PORT: '8080'
   _FIRESTORE_DB_NAME: 'devops-notes-db'
