@@ -26,7 +26,7 @@ steps:
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}'
     waitFor: ['build-frontend']
 
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run in Singapore
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-frontend'
     entrypoint: gcloud
@@ -37,7 +37,7 @@ steps:
       - '--image'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}'
       - '--region'
-      - '${_REGION}'
+      - '${_REGION_CLOUDRUN}'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
@@ -55,11 +55,11 @@ images:
 
 substitutions:
   _REGION: 'asia-south1'
+  _REGION_CLOUDRUN: 'asia-southeast1'
   _SERVICE_NAME: 'devops-notes-frontend'
-  _PROJECT_NUMBER: '434044738120'
   _ARTIFACT_REGISTRY_REPO: 'devops-notes-repo'
-  _BACKEND_API_URL: 'https://devops-notes-${_PROJECT_NUMBER}.${_REGION}.run.app'
-                    
+  _BACKEND_API_URL: 'https://api.notes.sumitkumardas.dev'
+
 options:
   machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
